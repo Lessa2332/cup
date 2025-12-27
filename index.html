@@ -416,16 +416,16 @@
         style="background: transparent;">
         
         <a-assets>
-            <!-- 2 відео -->
-            <video id="video1" src="./video1.mp4" muted playsinline webkit-playsinline preload="auto"></video>
-            <video id="video2" src="./video2.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+            <!-- 2 відео з папки videos/ -->
+            <video id="video1" src="./videos/video1.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+            <video id="video2" src="./videos/video2.mp4" muted playsinline webkit-playsinline preload="auto"></video>
             
-            <!-- 5 фото -->
-            <img id="photo1" src="./photo1.jpg" preload="auto">
-            <img id="photo2" src="./photo2.jpg" preload="auto">
-            <img id="photo3" src="./photo3.jpg" preload="auto">
-            <img id="photo4" src="./photo4.jpg" preload="auto">
-            <img id="photo5" src="./photo5.jpg" preload="auto">
+            <!-- 5 фото з папки photos/ -->
+            <img id="photo1" src="./photos/photo1.jpg" preload="auto">
+            <img id="photo2" src="./photos/photo2.jpg" preload="auto">
+            <img id="photo3" src="./photos/photo3.jpg" preload="auto">
+            <img id="photo4" src="./photos/photo4.jpg" preload="auto">
+            <img id="photo5" src="./photos/photo5.jpg" preload="auto">
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -951,7 +951,9 @@
                 try {
                     const media = this.getCurrentMedia();
                     const fileName = media.type === 'video' ? 'anya-video.mp4' : 'anya-photo.jpg';
-                    const fileUrl = media.type === 'video' ? './' + media.id + '.mp4' : './' + media.id + '.jpg';
+                    const fileUrl = media.type === 'video' 
+                        ? './videos/' + media.id + '.mp4' 
+                        : './photos/' + media.id + '.jpg';
                     
                     const link = document.createElement('a');
                     link.href = fileUrl;
@@ -1116,4 +1118,3 @@
     </script>
 </body>
 </html>
-
