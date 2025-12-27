@@ -606,13 +606,16 @@
                         if (videoEl) {
                             this.currentMediaType = 'video';
                             this.state.isPlaying = true;
+                            videoEl.currentTime = 0;
                             videoEl.play().catch(e => console.warn('Video play failed'));
                             this.playPauseBtn.innerHTML = '⏸ Пауза';
+                            this.playPauseBtn.style.display = 'flex'; // ВАЖЛИВО: показуємо кнопку паузи
                         }
                     } else {
                         this.currentMediaType = 'photo';
                         this.state.isPlaying = false;
                         this.playPauseBtn.innerHTML = '▶ Відтворити';
+                        this.playPauseBtn.style.display = 'none'; // Приховуємо для фото
                     }
                 }
                 
@@ -628,16 +631,22 @@
 
             updateMediaControls() {
                 const media = this.getCurrentMedia();
-                if (media.type === 'video') {
-                    this.playPauseBtn.style.display = 'flex';
-                    this.soundBtn.style.display = 'flex';
-                } else {
-                    this.playPauseBtn.style.display = 'none';
-                    this.soundBtn.style.display = 'none';
-                }
+                
+                // ВАЖЛИВО: не приховуємо звук для фото - залишаємо доступним
+                // Кнопка звуку буде працювати для відео, але буде видима завжди
+                this.soundBtn.style.display = 'flex';
                 
                 // Оновлюємо текст кнопки збереження
                 this.saveBtn.innerHTML = media.type === 'video' ? '💾 Зберегти відео' : '💾 Зберегти фото';
+                
+                // Перевіряємо стан звуку
+                if (this.state.soundEnabled) {
+                    this.soundBtn.innerHTML = '🔊 Вимк. звук';
+                    this.soundBtn.classList.add('on');
+                } else {
+                    this.soundBtn.innerHTML = '🔇 Увімк. звук';
+                    this.soundBtn.classList.remove('on');
+                }
             }
 
             updateMediaInfo(media) {
@@ -707,7 +716,11 @@
                     if (media.type === 'video') {
                         const videoEl = this.videoElements[media.id];
                         if (videoEl) {
-                            try { await videoEl.play(); } catch (e) { console.warn('Audio play failed'); }
+                            try { 
+                                await videoEl.play(); 
+                            } catch (e) { 
+                                console.warn('Audio play failed'); 
+                            }
                         }
                     }
                 } else {
@@ -760,10 +773,8 @@
             }
 
             handleVideoEnd(video) {
-                // Автоматично перемикаємо на наступне відео
-                if (this.getCurrentMedia().type === 'video') {
-                    setTimeout(() => this.nextMedia(), 500);
-                }
+                // Автоматично перемикаємо на наступне медіа (не тільки відео)
+                setTimeout(() => this.nextMedia(), 500);
             }
 
             showFeedback(text, isGood = true) {
@@ -774,13 +785,26 @@
             }
 
             showMediaControls(show) { 
-                show ? this.mediaControls.classList.add('visible') : this.mediaControls.classList.remove('visible'); 
-                show ? this.navDots.classList.add('visible') : this.navDots.classList.remove('visible'); 
+                if (show) {
+                    this.mediaControls.classList.add('visible');
+                    this.navDots.classList.add('visible');
+                    
+                    // Показуємо всі кнопки крім play/pause для фото
+                    const media = this.getCurrentMedia();
+                    if (media.type === 'photo') {
+                        this.playPauseBtn.style.display = 'none';
+                    } else {
+                        this.playPauseBtn.style.display = 'flex';
+                    }
+                } else {
+                    this.mediaControls.classList.remove('visible');
+                    this.navDots.classList.remove('visible');
+                }
             }
             
             hideMediaControls() { 
-                this.mediaControls.classList.remove('visible'); 
-                this.navDots.classList.remove('visible'); 
+                this.mediaControls.classList.remove('visible');
+                this.navDots.classList.remove('visible');
             }
             
             hideMarkerHint() { 
