@@ -171,6 +171,7 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            opacity: 1;
         }
 
         .media-btn:hover {
@@ -180,6 +181,12 @@
 
         .media-btn:active {
             transform: scale(0.95);
+        }
+
+        .media-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         .sound-btn {
@@ -328,101 +335,38 @@
         style="background: transparent;">
         
         <a-assets>
-            <!-- 2 відео з папки videos/ -->
+            <!-- 2 відео -->
             <video id="video1" src="./videos/video1.mp4" muted playsinline webkit-playsinline preload="auto"></video>
             <video id="video2" src="./videos/video2.mp4" muted playsinline webkit-playsinline preload="auto"></video>
             
-            <!-- 5 фото з папки photos/ -->
-            <img id="photo1" src="./photos/photo1.jpg" preload="auto">
-            <img id="photo2" src="./photos/photo2.jpg" preload="auto">
-            <img id="photo3" src="./photos/photo3.jpg" preload="auto">
-            <img id="photo4" src="./photos/photo4.jpg" preload="auto">
-            <img id="photo5" src="./photos/photo5.jpg" preload="auto">
+            <!-- 5 фото -->
+            <img id="photo1" src="./photos/photo1.jpg" crossorigin="anonymous">
+            <img id="photo2" src="./photos/photo2.jpg" crossorigin="anonymous">
+            <img id="photo3" src="./photos/photo3.jpg" crossorigin="anonymous">
+            <img id="photo4" src="./photos/photo4.jpg" crossorigin="anonymous">
+            <img id="photo5" src="./photos/photo5.jpg" crossorigin="anonymous">
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <a-entity mindar-image-target="targetIndex: 0">
-            <!-- Всі медіа елементи (спочатку приховані) -->
             <!-- Відео -->
-            <a-video
-                src="#video1"
-                width="1.7"
-                height="3.0"
-                position="0 0 0"
-                visible="false"
-                id="videoEntity1">
-            </a-video>
-            
-            <a-video
-                src="#video2"
-                width="1.7"
-                height="3.0"
-                position="0 0 0"
-                visible="false"
-                id="videoEntity2">
-            </a-video>
+            <a-video src="#video1" width="1.7" height="3.0" position="0 0 0" visible="false" id="videoEntity1"></a-video>
+            <a-video src="#video2" width="1.7" height="3.0" position="0 0 0" visible="false" id="videoEntity2"></a-video>
             
             <!-- Фото -->
-            <a-image
-                src="#photo1"
-                width="1.7"
-                height="3.0"
-                position="0 0 0"
-                visible="false"
-                id="photoEntity1">
-            </a-image>
-            
-            <a-image
-                src="#photo2"
-                width="1.7"
-                height="3.0"
-                position="0 0 0"
-                visible="false"
-                id="photoEntity2">
-            </a-image>
-            
-            <a-image
-                src="#photo3"
-                width="1.7"
-                height="3.0"
-                position="0 0 0"
-                visible="false"
-                id="photoEntity3">
-            </a-image>
-            
-            <a-image
-                src="#photo4"
-                width="1.7"
-                height="3.0"
-                position="0 0 0"
-                visible="false"
-                id="photoEntity4">
-            </a-image>
-            
-            <a-image
-                src="#photo5"
-                width="1.7"
-                height="3.0"
-                position="0 0 0"
-                visible="false"
-                id="photoEntity5">
-            </a-image>
+            <a-image src="#photo1" width="1.7" height="3.0" position="0 0 0" visible="false" id="photoEntity1"></a-image>
+            <a-image src="#photo2" width="1.7" height="3.0" position="0 0 0" visible="false" id="photoEntity2"></a-image>
+            <a-image src="#photo3" width="1.7" height="3.0" position="0 0 0" visible="false" id="photoEntity3"></a-image>
+            <a-image src="#photo4" width="1.7" height="3.0" position="0 0 0" visible="false" id="photoEntity4"></a-image>
+            <a-image src="#photo5" width="1.7" height="3.0" position="0 0 0" visible="false" id="photoEntity5"></a-image>
         </a-entity>
     </a-scene>
 
     <!-- Feedback -->
     <div class="feedback" id="feedback"></div>
-
-    <!-- Media Info -->
     <div class="media-info" id="mediaInfo"></div>
-
-    <!-- Navigation Dots -->
-    <div class="nav-dots" id="navDots">
-        <!-- Dots will be generated dynamically -->
-    </div>
-
-    <!-- Media Controls -->
+    <div class="nav-dots" id="navDots"></div>
     <div class="media-controls" id="mediaControls">
         <button class="media-btn" id="prevBtn">◀ Попереднє</button>
         <button class="media-btn" id="playPauseBtn">▶ Відтворити</button>
@@ -431,14 +375,11 @@
         <button class="media-btn" id="saveBtn">💾 Зберегти</button>
         <button class="media-btn" id="shareBtn">📤 Поділитись</button>
     </div>
-
-    <!-- Marker Hint -->
     <div id="markerHint">Направте камеру на фото 🪽</div>
 
     <script>
         class ARGallery {
             constructor() {
-                // Конфігурація медіа
                 this.MEDIA_CONFIG = {
                     videos: [
                         { id: 'video1', entityId: 'videoEntity1', type: 'video', name: 'Відео 1' },
@@ -453,7 +394,6 @@
                     ]
                 };
 
-                // Об'єднуємо все медіа в один масив
                 this.allMedia = [...this.MEDIA_CONFIG.videos, ...this.MEDIA_CONFIG.photos];
                 this.currentMediaIndex = 0;
                 this.currentMediaType = 'video';
@@ -467,7 +407,6 @@
 
             initializeElements() {
                 this.scene = document.getElementById('arScene');
-                
                 this.loadingScreen = document.getElementById('loadingScreen');
                 this.errorScreen = document.getElementById('errorScreen');
                 this.errorMessage = document.getElementById('errorMessage');
@@ -478,7 +417,6 @@
                 this.navDots = document.getElementById('navDots');
                 this.mediaInfo = document.getElementById('mediaInfo');
                 
-                // Кнопки керування
                 this.prevBtn = document.getElementById('prevBtn');
                 this.nextBtn = document.getElementById('nextBtn');
                 this.playPauseBtn = document.getElementById('playPauseBtn');
@@ -486,23 +424,20 @@
                 this.saveBtn = document.getElementById('saveBtn');
                 this.shareBtn = document.getElementById('shareBtn');
 
-                this.validateElements();
-                
-                // Отримуємо посилання на всі відео елементи
                 this.videoElements = {
                     video1: document.getElementById('video1'),
                     video2: document.getElementById('video2')
                 };
             }
 
-            validateElements() {
-                const required = [
-                    this.scene, this.loadingScreen, this.feedbackEl,
-                    this.markerHint, this.mediaControls
-                ];
-                required.forEach(el => {
-                    if (!el) throw new Error('DOM element missing');
-                });
+            setupState() {
+                this.state = {
+                    isMarkerFound: false,
+                    soundEnabled: false,
+                    isPlaying: false
+                };
+                this.hasEverShownMedia = false;
+                this.hideControlsTimeout = null;
             }
 
             createNavigationDots() {
@@ -520,20 +455,8 @@
             updateNavigationDots() {
                 const dots = this.navDots.querySelectorAll('.dot');
                 dots.forEach((dot, index) => {
-                    if (index === this.currentMediaIndex) {
-                        dot.classList.add('active');
-                    } else {
-                        dot.classList.remove('active');
-                    }
+                    dot.classList.toggle('active', index === this.currentMediaIndex);
                 });
-            }
-
-            setupState() {
-                this.state = {
-                    isMarkerFound: false,
-                    soundEnabled: false,
-                    isPlaying: false
-                };
             }
 
             bindEvents() {
@@ -545,17 +468,14 @@
                     });
                 }
 
-                // Кнопки керування медіа
                 this.prevBtn.addEventListener('click', () => this.previousMedia());
                 this.nextBtn.addEventListener('click', () => this.nextMedia());
                 this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
                 this.soundBtn.addEventListener('click', () => this.toggleSound());
                 this.saveBtn.addEventListener('click', () => this.saveCurrentMedia());
                 this.shareBtn.addEventListener('click', () => this.shareCurrentMedia());
-                
                 this.retryBtn.addEventListener('click', () => this.retryAR());
 
-                // Слухачі для всіх відео
                 Object.values(this.videoElements).forEach(video => {
                     video.addEventListener('loadeddata', () => console.log('Video loaded:', video.id));
                     video.addEventListener('error', (e) => this.handleVideoError(e));
@@ -573,52 +493,45 @@
                     const viewportHeight = window.visualViewport.height;
                     const layoutHeight = window.innerHeight;
                     const navBarHeight = Math.max(0, layoutHeight - viewportHeight);
-                    
-                    // Корекція для кнопок внизу
                     this.mediaControls.style.bottom = `${30 + navBarHeight}px`;
                     this.navDots.style.bottom = `${100 + navBarHeight}px`;
                 }
             }
 
-            // Показуємо конкретне медіа
             showMedia(index) {
                 const media = this.allMedia[index];
                 if (!media) return;
-                
-                // Приховуємо всі медіа
+
                 this.allMedia.forEach(m => {
                     const entity = document.getElementById(m.entityId);
                     if (entity) entity.setAttribute('visible', false);
                 });
-                
-                // Паузимо всі відео
+
                 Object.values(this.videoElements).forEach(video => {
                     if (!video.paused) video.pause();
                 });
-                
-                // Показуємо поточне медіа
+
                 const currentEntity = document.getElementById(media.entityId);
                 if (currentEntity) {
                     currentEntity.setAttribute('visible', true);
-                    
                     if (media.type === 'video') {
                         const videoEl = this.videoElements[media.id];
                         if (videoEl) {
                             this.currentMediaType = 'video';
                             this.state.isPlaying = true;
                             videoEl.currentTime = 0;
-                            videoEl.play().catch(e => console.warn('Video play failed'));
+                            videoEl.play().catch(e => console.warn('Play failed'));
                             this.playPauseBtn.innerHTML = '⏸ Пауза';
-                            this.playPauseBtn.style.display = 'flex'; // ВАЖЛИВО: показуємо кнопку паузи
+                            this.playPauseBtn.classList.remove('disabled');
                         }
                     } else {
                         this.currentMediaType = 'photo';
                         this.state.isPlaying = false;
                         this.playPauseBtn.innerHTML = '▶ Відтворити';
-                        this.playPauseBtn.style.display = 'none'; // Приховуємо для фото
+                        this.playPauseBtn.classList.add('disabled');
                     }
                 }
-                
+
                 this.currentMediaIndex = index;
                 this.updateNavigationDots();
                 this.updateMediaControls();
@@ -631,42 +544,26 @@
 
             updateMediaControls() {
                 const media = this.getCurrentMedia();
-                
-                // ВАЖЛИВО: не приховуємо звук для фото - залишаємо доступним
-                // Кнопка звуку буде працювати для відео, але буде видима завжди
-                this.soundBtn.style.display = 'flex';
-                
-                // Оновлюємо текст кнопки збереження
                 this.saveBtn.innerHTML = media.type === 'video' ? '💾 Зберегти відео' : '💾 Зберегти фото';
                 
-                // Перевіряємо стан звуку
-                if (this.state.soundEnabled) {
-                    this.soundBtn.innerHTML = '🔊 Вимк. звук';
-                    this.soundBtn.classList.add('on');
-                } else {
-                    this.soundBtn.innerHTML = '🔇 Увімк. звук';
-                    this.soundBtn.classList.remove('on');
-                }
+                this.soundBtn.innerHTML = this.state.soundEnabled ? '🔊 Вимк. звук' : '🔇 Увімк. звук';
+                this.soundBtn.classList.toggle('on', this.state.soundEnabled);
             }
 
             updateMediaInfo(media) {
                 this.mediaInfo.textContent = `${media.type === 'video' ? 'Відео' : 'Фото'} ${this.currentMediaIndex + 1}/${this.allMedia.length}`;
                 this.mediaInfo.classList.add('visible');
-                
-                // Автоматично приховуємо через 3 секунди
-                setTimeout(() => {
-                    this.mediaInfo.classList.remove('visible');
-                }, 3000);
+                setTimeout(() => this.mediaInfo.classList.remove('visible'), 3000);
             }
 
             switchToMedia(index) {
-                if (index < 0 || index >= this.allMedia.length) return;
-                this.showMedia(index);
+                if (index >= 0 && index < this.allMedia.length) {
+                    this.showMedia(index);
+                }
             }
 
             nextMedia() {
-                let nextIndex = this.currentMediaIndex + 1;
-                if (nextIndex >= this.allMedia.length) nextIndex = 0;
+                let nextIndex = (this.currentMediaIndex + 1) % this.allMedia.length;
                 this.showMedia(nextIndex);
                 this.showFeedback('Наступне ➡️', true);
             }
@@ -681,10 +578,9 @@
             togglePlayPause() {
                 const media = this.getCurrentMedia();
                 if (media.type !== 'video') return;
-                
                 const videoEl = this.videoElements[media.id];
                 if (!videoEl) return;
-                
+
                 if (this.state.isPlaying) {
                     videoEl.pause();
                     this.playPauseBtn.innerHTML = '▶ Відтворити';
@@ -694,86 +590,63 @@
                     this.playPauseBtn.innerHTML = '⏸ Пауза';
                     this.showFeedback('Відтворення ▶️', true);
                 }
-                
                 this.state.isPlaying = !this.state.isPlaying;
             }
 
             async toggleSound() {
                 this.state.soundEnabled = !this.state.soundEnabled;
-                
-                // Встановлюємо звук для всіх відео
                 Object.values(this.videoElements).forEach(video => {
                     video.muted = !this.state.soundEnabled;
                 });
-                
+
                 if (this.state.soundEnabled) {
-                    this.soundBtn.innerHTML = '🔊 Вимк. звук';
-                    this.soundBtn.classList.add('on');
                     this.showFeedback('Звук увімкнено 🔊', true);
-                    
-                    // Спробуємо відтворити поточне відео зі звуком
                     const media = this.getCurrentMedia();
                     if (media.type === 'video') {
                         const videoEl = this.videoElements[media.id];
                         if (videoEl) {
-                            try { 
-                                await videoEl.play(); 
-                            } catch (e) { 
-                                console.warn('Audio play failed'); 
-                            }
+                            try { await videoEl.play(); } catch (e) {}
                         }
                     }
                 } else {
-                    this.soundBtn.innerHTML = '🔇 Увімк. звук';
-                    this.soundBtn.classList.remove('on');
                     this.showFeedback('Звук вимкнено 🔇', false);
                 }
+                this.updateMediaControls();
             }
 
             async saveCurrentMedia() {
                 try {
                     const media = this.getCurrentMedia();
-                    const fileName = media.type === 'video' ? 'video.mp4' : 'photo.jpg';
-                    const fileUrl = media.type === 'video' 
-                        ? './videos/' + media.id + '.mp4' 
-                        : './photos/' + media.id + '.jpg';
-                    
                     const link = document.createElement('a');
-                    link.href = fileUrl;
-                    link.download = fileName;
+                    link.href = `./${media.type === 'video' ? 'videos' : 'photos'}/${media.id}.${media.type === 'video' ? 'mp4' : 'jpg'}`;
+                    link.download = `${media.name}.${media.type === 'video' ? 'mp4' : 'jpg'}`;
                     link.click();
-                    
                     this.showFeedback(`${media.type === 'video' ? 'Відео' : 'Фото'} збережено! 💾`, true);
                 } catch (error) {
-                    console.error('Помилка збереження:', error);
                     this.showFeedback('Помилка збереження 😔', false);
                 }
             }
 
             async shareCurrentMedia() {
                 try {
-                    const media = this.getCurrentMedia();
-                    
                     if (navigator.share) {
+                        const media = this.getCurrentMedia();
                         await navigator.share({
-                            title: `${media.type === 'video' ? 'Відео' : 'Фото'}`,
+                            title: media.name,
                             text: `Подивись на це ${media.type === 'video' ? 'відео' : 'фото'}!`,
                             url: window.location.href,
                         });
                         this.showFeedback('Поділились успішно! 📤', true);
                     } else {
-                        // Fallback для браузерів без Web Share API
                         navigator.clipboard.writeText(window.location.href);
                         this.showFeedback('Посилання скопійовано! 📋', true);
                     }
                 } catch (error) {
-                    console.error('Помилка поділу:', error);
                     this.showFeedback('Не вдалося поділитись 😔', false);
                 }
             }
 
             handleVideoEnd(video) {
-                // Автоматично перемикаємо на наступне медіа (не тільки відео)
                 setTimeout(() => this.nextMedia(), 500);
             }
 
@@ -784,29 +657,16 @@
                 setTimeout(() => this.feedbackEl.classList.remove('visible'), 1500);
             }
 
-            showMediaControls(show) { 
+            showMediaControls(show) {
                 if (show) {
                     this.mediaControls.classList.add('visible');
                     this.navDots.classList.add('visible');
-                    
-                    // Показуємо всі кнопки крім play/pause для фото
-                    const media = this.getCurrentMedia();
-                    if (media.type === 'photo') {
-                        this.playPauseBtn.style.display = 'none';
-                    } else {
-                        this.playPauseBtn.style.display = 'flex';
-                    }
                 } else {
                     this.mediaControls.classList.remove('visible');
                     this.navDots.classList.remove('visible');
                 }
             }
-            
-            hideMediaControls() { 
-                this.mediaControls.classList.remove('visible');
-                this.navDots.classList.remove('visible');
-            }
-            
+
             hideMarkerHint() { 
                 this.markerHint.classList.add('hidden'); 
             }
@@ -814,17 +674,17 @@
             showMarkerHint() { 
                 this.markerHint.classList.remove('hidden'); 
             }
-            
+
             hideLoading() { 
                 this.loadingScreen.style.display = 'none'; 
             }
-            
+
             showError(msg) { 
                 this.errorMessage.textContent = msg; 
                 this.errorScreen.classList.add('visible'); 
                 this.hideLoading(); 
             }
-            
+
             hideError() { 
                 this.errorScreen.classList.remove('visible'); 
             }
@@ -836,44 +696,42 @@
 
             handleTargetFound() {
                 this.state.isMarkerFound = true;
+                if (this.hideControlsTimeout) {
+                    clearTimeout(this.hideControlsTimeout);
+                    this.hideControlsTimeout = null;
+                }
                 this.hideMarkerHint();
-                
-                // Показуємо перше медіа
-                this.showMedia(0);
                 this.showMediaControls(true);
+                if (!this.hasEverShownMedia) {
+                    this.showMedia(0);
+                    this.hasEverShownMedia = true;
+                }
             }
 
             handleTargetLost() {
-                this.state.isMarkerFound = false;
-                
-                // Приховуємо всі медіа
+                // Приховуємо медіа, але НЕ кнопки одразу
                 this.allMedia.forEach(m => {
                     const entity = document.getElementById(m.entityId);
                     if (entity) entity.setAttribute('visible', false);
                 });
-                
-                // Паузимо всі відео
                 Object.values(this.videoElements).forEach(video => {
                     if (!video.paused) video.pause();
                 });
-                
                 this.state.isPlaying = false;
-                this.hideMediaControls();
-                this.showMarkerHint();
+
+                // Затримка перед приховуванням UI
+                if (this.hideControlsTimeout) clearTimeout(this.hideControlsTimeout);
+                this.hideControlsTimeout = setTimeout(() => {
+                    if (!this.state.isMarkerFound) {
+                        this.showMediaControls(false);
+                        this.showMarkerHint();
+                    }
+                }, 1500); // 1.5 секунди
             }
 
-            handleGlobalError(e) { 
-                this.showError('Неочікувана помилка'); 
-            }
-            
-            handleVideoError(e) { 
-                console.error('Video error:', e);
-                this.showFeedback('Помилка відео', false); 
-            }
-            
-            handleARError(e) { 
-                this.showError('Помилка AR: ' + (e.detail || '')); 
-            }
+            handleGlobalError(e) { this.showError('Неочікувана помилка'); }
+            handleVideoError(e) { this.showFeedback('Помилка відео', false); }
+            handleARError(e) { this.showError('Помилка AR: ' + (e.detail || '')); }
 
             retryAR() {
                 this.hideError();
