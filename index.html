@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>AR Гра</title>
+    <title>AR Галерея</title>
     
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -79,56 +79,6 @@
             opacity: 1;
         }
 
-        /* Game Canvas */
-        #gameCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 20;
-            pointer-events: auto;
-            touch-action: none;
-        }
-
-        /* HUD */
-        .hud {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 30;
-            text-align: center;
-            color: white;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .hud.visible {
-            opacity: 1;
-        }
-
-        .instructions {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 8px 16px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 16px;
-            margin-bottom: 8px;
-            backdrop-filter: blur(10px);
-        }
-
-        .score {
-            background: rgba(212, 175, 55, 0.9);
-            color: #000;
-            padding: 8px 20px;
-            border-radius: 12px;
-            font-weight: 800;
-            font-size: 18px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
         /* Feedback Messages */
         .feedback {
             position: fixed;
@@ -152,57 +102,6 @@
 
         .feedback.visible {
             opacity: 1;
-        }
-
-        /* Victory Screen */
-        .victory {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            color: #d4af37;
-            padding: 32px;
-            border-radius: 24px;
-            font-weight: 800;
-            font-size: 28px;
-            text-align: center;
-            z-index: 50;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease;
-            backdrop-filter: blur(20px);
-            border: 2px solid #d4af37;
-            max-width: 90%;
-            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.3);
-        }
-
-        .victory.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .victory-message {
-            margin-bottom: 20px;
-        }
-
-        .continue-btn {
-            background: #d4af37;
-            color: #000;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-family: 'Inter', sans-serif;
-            font-weight: 700;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 16px;
-        }
-
-        .continue-btn:hover {
-            background: #e6c550;
-            transform: scale(1.05);
         }
 
         /* Marker Hint */
@@ -281,12 +180,6 @@
 
         .media-btn:active {
             transform: scale(0.95);
-        }
-
-        .media-btn.active {
-            background: rgba(255, 255, 255, 0.95);
-            color: #000;
-            border: 2px solid #d4af37;
         }
 
         .sound-btn {
@@ -368,6 +261,29 @@
             margin-top: 20px;
         }
 
+        /* Media Info */
+        .media-info {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: #d4af37;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            z-index: 30;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .media-info.visible {
+            opacity: 1;
+        }
+
         @media (max-width: 480px) {
             .media-controls {
                 gap: 10px;
@@ -383,10 +299,6 @@
             
             .nav-dots {
                 bottom: 85px;
-            }
-            
-            .hud {
-                bottom: 80px;
             }
         }
     </style>
@@ -499,24 +411,11 @@
         </a-entity>
     </a-scene>
 
-    <!-- Game Canvas -->
-    <canvas id="gameCanvas"></canvas>
-
-    <!-- HUD -->
-    <div class="hud" id="hud">
-        <div class="instructions">Лови тільки крила 🪽</div>
-        <div class="score" id="score">Крила: 0/10</div>
-    </div>
-
     <!-- Feedback -->
     <div class="feedback" id="feedback"></div>
 
-    <!-- Victory Screen -->
-    <div class="victory" id="victory">
-        <div class="victory-message">Аня надає крила! 💋</div>
-        <div>Ти зібрав усі крила!</div>
-        <button class="continue-btn" id="continueBtn">Грати ще раз</button>
-    </div>
+    <!-- Media Info -->
+    <div class="media-info" id="mediaInfo"></div>
 
     <!-- Navigation Dots -->
     <div class="nav-dots" id="navDots">
@@ -537,7 +436,7 @@
     <div id="markerHint">Направте камеру на фото 🪽</div>
 
     <script>
-        class ARGame {
+        class ARGallery {
             constructor() {
                 // Конфігурація медіа
                 this.MEDIA_CONFIG = {
@@ -557,10 +456,10 @@
                 // Об'єднуємо все медіа в один масив
                 this.allMedia = [...this.MEDIA_CONFIG.videos, ...this.MEDIA_CONFIG.photos];
                 this.currentMediaIndex = 0;
-                this.currentMediaType = 'video'; // 'video' або 'photo'
+                this.currentMediaType = 'video';
                 
                 this.initializeElements();
-                this.setupGameState();
+                this.setupState();
                 this.bindEvents();
                 this.adjustControlsForSafeArea();
                 this.createNavigationDots();
@@ -568,21 +467,16 @@
 
             initializeElements() {
                 this.scene = document.getElementById('arScene');
-                this.gameCanvas = document.getElementById('gameCanvas');
-                this.ctx = this.gameCanvas.getContext('2d');
                 
                 this.loadingScreen = document.getElementById('loadingScreen');
                 this.errorScreen = document.getElementById('errorScreen');
                 this.errorMessage = document.getElementById('errorMessage');
                 this.retryBtn = document.getElementById('retryBtn');
-                this.hud = document.getElementById('hud');
-                this.scoreEl = document.getElementById('score');
                 this.feedbackEl = document.getElementById('feedback');
-                this.victoryEl = document.getElementById('victory');
-                this.continueBtn = document.getElementById('continueBtn');
                 this.markerHint = document.getElementById('markerHint');
                 this.mediaControls = document.getElementById('mediaControls');
                 this.navDots = document.getElementById('navDots');
+                this.mediaInfo = document.getElementById('mediaInfo');
                 
                 // Кнопки керування
                 this.prevBtn = document.getElementById('prevBtn');
@@ -593,7 +487,6 @@
                 this.shareBtn = document.getElementById('shareBtn');
 
                 this.validateElements();
-                this.resizeCanvas();
                 
                 // Отримуємо посилання на всі відео елементи
                 this.videoElements = {
@@ -604,9 +497,8 @@
 
             validateElements() {
                 const required = [
-                    this.scene, this.gameCanvas, this.ctx,
-                    this.loadingScreen, this.hud, this.scoreEl, this.feedbackEl,
-                    this.victoryEl, this.markerHint, this.mediaControls
+                    this.scene, this.loadingScreen, this.feedbackEl,
+                    this.markerHint, this.mediaControls
                 ];
                 required.forEach(el => {
                     if (!el) throw new Error('DOM element missing');
@@ -636,24 +528,15 @@
                 });
             }
 
-            setupGameState() {
-                this.gameState = {
+            setupState() {
+                this.state = {
                     isMarkerFound: false,
-                    score: 0,
-                    TARGET_SCORE: 10,
-                    fallingItems: [],
-                    gameActive: false,
-                    animationId: null,
                     soundEnabled: false,
-                    lastSpawnTime: 0,
-                    SPAWN_INTERVAL: 300,
-                    WING_PROBABILITY: 0.6,
                     isPlaying: false
                 };
             }
 
             bindEvents() {
-                window.addEventListener('resize', () => this.throttledResize());
                 window.addEventListener('error', (e) => this.handleGlobalError(e));
 
                 if (window.visualViewport) {
@@ -661,9 +544,6 @@
                         this.adjustControlsForSafeArea();
                     });
                 }
-
-                this.gameCanvas.addEventListener('pointerdown', (e) => this.handleTap(e));
-                this.gameCanvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 
                 // Кнопки керування медіа
                 this.prevBtn.addEventListener('click', () => this.previousMedia());
@@ -673,7 +553,6 @@
                 this.saveBtn.addEventListener('click', () => this.saveCurrentMedia());
                 this.shareBtn.addEventListener('click', () => this.shareCurrentMedia());
                 
-                this.continueBtn.addEventListener('click', () => this.restartGame());
                 this.retryBtn.addEventListener('click', () => this.retryAR());
 
                 // Слухачі для всіх відео
@@ -698,22 +577,7 @@
                     // Корекція для кнопок внизу
                     this.mediaControls.style.bottom = `${30 + navBarHeight}px`;
                     this.navDots.style.bottom = `${100 + navBarHeight}px`;
-                    this.hud.style.bottom = `${80 + navBarHeight}px`;
                 }
-            }
-
-            resizeCanvas() {
-                const dpr = window.devicePixelRatio || 1;
-                this.gameCanvas.width = window.innerWidth * dpr;
-                this.gameCanvas.height = window.innerHeight * dpr;
-                this.gameCanvas.style.width = `${window.innerWidth}px`;
-                this.gameCanvas.style.height = `${window.innerHeight}px`;
-                this.ctx.scale(dpr, dpr);
-            }
-
-            throttledResize() {
-                clearTimeout(this.resizeTimeout);
-                this.resizeTimeout = setTimeout(() => this.resizeCanvas(), 100);
             }
 
             // Показуємо конкретне медіа
@@ -741,13 +605,13 @@
                         const videoEl = this.videoElements[media.id];
                         if (videoEl) {
                             this.currentMediaType = 'video';
-                            this.gameState.isPlaying = true;
+                            this.state.isPlaying = true;
                             videoEl.play().catch(e => console.warn('Video play failed'));
                             this.playPauseBtn.innerHTML = '⏸ Пауза';
                         }
                     } else {
                         this.currentMediaType = 'photo';
-                        this.gameState.isPlaying = false;
+                        this.state.isPlaying = false;
                         this.playPauseBtn.innerHTML = '▶ Відтворити';
                     }
                 }
@@ -755,6 +619,7 @@
                 this.currentMediaIndex = index;
                 this.updateNavigationDots();
                 this.updateMediaControls();
+                this.updateMediaInfo(media);
             }
 
             getCurrentMedia() {
@@ -773,6 +638,16 @@
                 
                 // Оновлюємо текст кнопки збереження
                 this.saveBtn.innerHTML = media.type === 'video' ? '💾 Зберегти відео' : '💾 Зберегти фото';
+            }
+
+            updateMediaInfo(media) {
+                this.mediaInfo.textContent = `${media.type === 'video' ? 'Відео' : 'Фото'} ${this.currentMediaIndex + 1}/${this.allMedia.length}`;
+                this.mediaInfo.classList.add('visible');
+                
+                // Автоматично приховуємо через 3 секунди
+                setTimeout(() => {
+                    this.mediaInfo.classList.remove('visible');
+                }, 3000);
             }
 
             switchToMedia(index) {
@@ -801,7 +676,7 @@
                 const videoEl = this.videoElements[media.id];
                 if (!videoEl) return;
                 
-                if (this.gameState.isPlaying) {
+                if (this.state.isPlaying) {
                     videoEl.pause();
                     this.playPauseBtn.innerHTML = '▶ Відтворити';
                     this.showFeedback('Пауза ⏸', false);
@@ -811,18 +686,18 @@
                     this.showFeedback('Відтворення ▶️', true);
                 }
                 
-                this.gameState.isPlaying = !this.gameState.isPlaying;
+                this.state.isPlaying = !this.state.isPlaying;
             }
 
             async toggleSound() {
-                this.gameState.soundEnabled = !this.gameState.soundEnabled;
+                this.state.soundEnabled = !this.state.soundEnabled;
                 
                 // Встановлюємо звук для всіх відео
                 Object.values(this.videoElements).forEach(video => {
-                    video.muted = !this.gameState.soundEnabled;
+                    video.muted = !this.state.soundEnabled;
                 });
                 
-                if (this.gameState.soundEnabled) {
+                if (this.state.soundEnabled) {
                     this.soundBtn.innerHTML = '🔊 Вимк. звук';
                     this.soundBtn.classList.add('on');
                     this.showFeedback('Звук увімкнено 🔊', true);
@@ -842,115 +717,10 @@
                 }
             }
 
-            spawnItem() {
-                if (!this.gameState.gameActive) return;
-                const now = performance.now();
-                if (now - this.gameState.lastSpawnTime < this.gameState.SPAWN_INTERVAL) return;
-
-                const isWing = Math.random() < this.gameState.WING_PROBABILITY;
-                const emoji = isWing ? '🪽' : ['🎂', '🍷', '🎁', '🌹', '😂'][Math.floor(Math.random() * 5)];
-
-                this.gameState.fallingItems.push({
-                    x: Math.random() * (window.innerWidth - 60) + 30,
-                    y: -60,
-                    size: 32 + Math.random() * 20,
-                    speed: 2 + Math.random() * 3,
-                    emoji,
-                    isWing,
-                    id: now + Math.random()
-                });
-
-                this.gameState.lastSpawnTime = now;
-            }
-
-            update() {
-                if (!this.gameState.gameActive) return;
-
-                this.ctx.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-
-                for (let i = this.gameState.fallingItems.length - 1; i >= 0; i--) {
-                    const item = this.gameState.fallingItems[i];
-                    item.y += item.speed;
-                    this.ctx.font = `bold ${item.size}px sans-serif`;
-                    this.ctx.fillText(item.emoji, item.x, item.y);
-
-                    if (item.y > window.innerHeight + 100) {
-                        this.gameState.fallingItems.splice(i, 1);
-                    }
-                }
-
-                this.spawnItem();
-                this.gameState.animationId = requestAnimationFrame(() => this.update());
-            }
-
-            handleTap(event) {
-                if (!this.gameState.gameActive) return;
-                const rect = this.gameCanvas.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
-
-                let hit = false;
-                for (let i = this.gameState.fallingItems.length - 1; i >= 0; i--) {
-                    const item = this.gameState.fallingItems[i];
-                    const dx = x - item.x;
-                    const dy = y - item.y;
-                    const distance = Math.sqrt(dx*dx + dy*dy);
-                    if (distance < item.size * 0.6) {
-                        hit = true;
-                        const isWing = item.isWing;
-                        this.gameState.fallingItems.splice(i, 1);
-                        if (isWing) {
-                            this.gameState.score++;
-                            this.updateScore();
-                            this.showFeedback('+1 крило! 🪽', true);
-                            if (this.gameState.score >= this.gameState.TARGET_SCORE) {
-                                this.endGame(true);
-                            }
-                        } else {
-                            this.showFeedback('Ой, ще без крил 😅', false);
-                        }
-                        break;
-                    }
-                }
-                if (!hit) this.showFeedback('Мімо! 👆', false);
-            }
-
-            startGame() {
-                if (this.gameState.gameActive) return;
-                this.gameState.gameActive = true;
-                this.gameState.score = 0;
-                this.gameState.fallingItems = [];
-                this.updateScore();
-                this.showHUD(true);
-                this.showMediaControls(true);
-                this.hideVictory();
-                this.update();
-            }
-
-            endGame(isWin) {
-                this.gameState.gameActive = false;
-                if (this.gameState.animationId) {
-                    cancelAnimationFrame(this.gameState.animationId);
-                    this.gameState.animationId = null;
-                }
-                if (isWin) this.showVictory();
-            }
-
-            restartGame() {
-                this.hideVictory();
-                this.startGame();
-            }
-
-            updateScore() {
-                this.scoreEl.textContent = `Крила: ${this.gameState.score}/${this.gameState.TARGET_SCORE}`;
-            }
-
             async saveCurrentMedia() {
                 try {
                     const media = this.getCurrentMedia();
-                    const fileName = media.type === 'video' ? 'anya-video.mp4' : 'anya-photo.jpg';
+                    const fileName = media.type === 'video' ? 'video.mp4' : 'photo.jpg';
                     const fileUrl = media.type === 'video' 
                         ? './videos/' + media.id + '.mp4' 
                         : './photos/' + media.id + '.jpg';
@@ -973,7 +743,7 @@
                     
                     if (navigator.share) {
                         await navigator.share({
-                            title: `${media.type === 'video' ? 'Відео' : 'Фото'} з Анею`,
+                            title: `${media.type === 'video' ? 'Відео' : 'Фото'}`,
                             text: `Подивись на це ${media.type === 'video' ? 'відео' : 'фото'}!`,
                             url: window.location.href,
                         });
@@ -1003,10 +773,6 @@
                 setTimeout(() => this.feedbackEl.classList.remove('visible'), 1500);
             }
 
-            showHUD(show) { 
-                show ? this.hud.classList.add('visible') : this.hud.classList.remove('visible'); 
-            }
-            
             showMediaControls(show) { 
                 show ? this.mediaControls.classList.add('visible') : this.mediaControls.classList.remove('visible'); 
                 show ? this.navDots.classList.add('visible') : this.navDots.classList.remove('visible'); 
@@ -1015,14 +781,6 @@
             hideMediaControls() { 
                 this.mediaControls.classList.remove('visible'); 
                 this.navDots.classList.remove('visible'); 
-            }
-            
-            showVictory() { 
-                this.victoryEl.classList.add('visible'); 
-            }
-            
-            hideVictory() { 
-                this.victoryEl.classList.remove('visible'); 
             }
             
             hideMarkerHint() { 
@@ -1053,16 +811,16 @@
             }
 
             handleTargetFound() {
-                this.gameState.isMarkerFound = true;
+                this.state.isMarkerFound = true;
                 this.hideMarkerHint();
                 
                 // Показуємо перше медіа
                 this.showMedia(0);
-                this.startGame();
+                this.showMediaControls(true);
             }
 
             handleTargetLost() {
-                this.gameState.isMarkerFound = false;
+                this.state.isMarkerFound = false;
                 
                 // Приховуємо всі медіа
                 this.allMedia.forEach(m => {
@@ -1075,18 +833,8 @@
                     if (!video.paused) video.pause();
                 });
                 
-                this.gameState.gameActive = false;
-                this.gameState.isPlaying = false;
-                
-                if (this.gameState.animationId) {
-                    cancelAnimationFrame(this.gameState.animationId);
-                    this.gameState.animationId = null;
-                }
-                
-                this.showHUD(false);
+                this.state.isPlaying = false;
                 this.hideMediaControls();
-                this.hideVictory();
-                this.gameState.fallingItems = [];
                 this.showMarkerHint();
             }
 
@@ -1111,9 +859,9 @@
         }
 
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => new ARGame());
+            document.addEventListener('DOMContentLoaded', () => new ARGallery());
         } else {
-            new ARGame();
+            new ARGallery();
         }
     </script>
 </body>
