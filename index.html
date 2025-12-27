@@ -363,7 +363,7 @@
         </a-entity>
     </a-scene>
 
-    <!-- Feedback -->
+    <!-- UI Elements -->
     <div class="feedback" id="feedback"></div>
     <div class="media-info" id="mediaInfo"></div>
     <div class="nav-dots" id="navDots"></div>
@@ -403,8 +403,70 @@
                 this.bindEvents();
                 this.adjustControlsForSafeArea();
                 this.createNavigationDots();
+                this.setupMediaSizes().catch(e => console.warn('Помилка завантаження медіа:', e));
             }
 
+            // === НОВІ МЕТОДИ ДЛЯ АДАПТИВНИХ РОЗМІРІВ ===
+            calculateARSize(imgOrVideo, maxWidth = 1.7) {
+                const naturalWidth = imgOrVideo.naturalWidth || imgOrVideo.videoWidth || 1;
+                const naturalHeight = imgOrVideo.naturalHeight || imgOrVideo.videoHeight || 1;
+                
+                if (naturalWidth === 0 || naturalHeight === 0) {
+                    return { width: maxWidth, height: maxWidth * 1.77 }; // fallback (16:9)
+                }
+
+                const aspectRatio = naturalHeight / naturalWidth;
+                const width = maxWidth;
+                const height = maxWidth * aspectRatio;
+
+                return { width, height };
+            }
+
+            async setupMediaSizes() {
+                // Обробка фото
+                for (const photo of this.MEDIA_CONFIG.photos) {
+                    const img = document.getElementById(photo.id);
+                    if (img.complete && img.naturalWidth > 0) {
+                        this.applySizeToEntity(photo.entityId, img);
+                    } else {
+                        await new Promise(resolve => {
+                            img.onload = () => {
+                                this.applySizeToEntity(photo.entityId, img);
+                                resolve();
+                            };
+                            img.onerror = resolve;
+                        });
+                    }
+                }
+
+                // Обробка відео
+                for (const video of this.MEDIA_CONFIG.videos) {
+                    const vid = document.getElementById(video.id);
+                    if (vid.readyState >= 2) {
+                        this.applySizeToEntity(video.entityId, vid);
+                    } else {
+                        await new Promise(resolve => {
+                            vid.onloadeddata = () => {
+                                this.applySizeToEntity(video.entityId, vid);
+                                resolve();
+                            };
+                            vid.onerror = resolve;
+                        });
+                    }
+                }
+            }
+
+            applySizeToEntity(entityId, mediaElement) {
+                const { width, height } = this.calculateARSize(mediaElement, 1.7);
+                const entity = document.getElementById(entityId);
+                if (entity) {
+                    entity.setAttribute('width', width);
+                    entity.setAttribute('height', height);
+                    console.log(`Розмір ${entityId}: ${width.toFixed(2)} x ${height.toFixed(2)}`);
+                }
+            }
+
+            // === РЕШТА КОДУ (НЕ ЗМІНЕНО, АЛЕ ЗБЕРЕЖЕНО) ===
             initializeElements() {
                 this.scene = document.getElementById('arScene');
                 this.loadingScreen = document.getElementById('loadingScreen');
@@ -709,7 +771,6 @@
             }
 
             handleTargetLost() {
-                // Приховуємо медіа, але НЕ кнопки одразу
                 this.allMedia.forEach(m => {
                     const entity = document.getElementById(m.entityId);
                     if (entity) entity.setAttribute('visible', false);
@@ -719,14 +780,13 @@
                 });
                 this.state.isPlaying = false;
 
-                // Затримка перед приховуванням UI
                 if (this.hideControlsTimeout) clearTimeout(this.hideControlsTimeout);
                 this.hideControlsTimeout = setTimeout(() => {
                     if (!this.state.isMarkerFound) {
                         this.showMediaControls(false);
                         this.showMarkerHint();
                     }
-                }, 1500); // 1.5 секунди
+                }, 1500);
             }
 
             handleGlobalError(e) { this.showError('Неочікувана помилка'); }
