@@ -1,584 +1,1118 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="AR-сцена з планетою для дітей">
-    <title>🌍«Світ на долоні » 🎈</title>
-
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Аня - AR Гра</title>
+    
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- A-Frame and MindAR -->
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+
         html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
             height: 100%;
             overflow: hidden;
             background: transparent;
-            font-family: 'Comic Neue', cursive, sans-serif;
-            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        a-scene {
-            width: 100% !important;
-            height: 100% !important;
+        /* Loading Screen */
+        .loading-screen {
             position: fixed;
             top: 0;
             left: 0;
-            background: transparent;
-        }
-
-        .arjs-loader {
-            height: 100%;
             width: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            background: rgba(135, 206, 235, 0.2);
-            z-index: 9999;
+            height: 100%;
+            background: #000;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: #FF4500;
-            font-size: 1.8em;
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
-            font-family: 'Comic Neue', cursive, sans-serif;
-            font-weight: 700;
+            z-index: 100;
+            color: #d4af37;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(212, 175, 55, 0.3);
+            border-top: 4px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
         }
 
-        .pulse { animation: pulse 1.5s infinite; }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
-        .controls {
-            position: absolute;
-            bottom: 20px;
+        /* AR Scene */
+        a-scene {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            background: transparent;
+        }
+
+        a-scene.ready {
+            opacity: 1;
+        }
+
+        /* Game Canvas */
+        #gameCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        /* HUD */
+        .hud {
+            position: fixed;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10000;
+            z-index: 30;
+            text-align: center;
+            color: white;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .hud.visible {
+            opacity: 1;
+        }
+
+        .instructions {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .score {
+            background: rgba(212, 175, 55, 0.9);
+            color: #000;
+            padding: 8px 20px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Feedback Messages */
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: 800;
+            z-index: 40;
+            opacity: 0;
+            pointer-events: none;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+            text-align: center;
+            transition: opacity 0.3s ease;
+            padding: 16px 24px;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            color: #d4af37;
+        }
+
+        .feedback.visible {
+            opacity: 1;
+        }
+
+        /* Victory Screen */
+        .victory {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: #d4af37;
+            padding: 32px;
+            border-radius: 24px;
+            font-weight: 800;
+            font-size: 28px;
+            text-align: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            backdrop-filter: blur(20px);
+            border: 2px solid #d4af37;
+            max-width: 90%;
+            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.3);
+        }
+
+        .victory.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .victory-message {
+            margin-bottom: 20px;
+        }
+
+        .continue-btn {
+            background: #d4af37;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+        }
+
+        .continue-btn:hover {
+            background: #e6c550;
+            transform: scale(1.05);
+        }
+
+        /* Marker Hint */
+        #markerHint {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #d4af37;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            z-index: 30;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
+            max-width: 90%;
+        }
+
+        #markerHint.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Media Controls */
+        .media-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 35;
+            display: flex;
+            gap: 16px;
+            pointer-events: auto;
+            padding: 0 20px;
+            width: 100%;
+            max-width: 500px;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            flex-wrap: wrap;
+        }
+
+        .media-controls.visible {
+            opacity: 1;
+        }
+
+        .media-btn {
+            background: rgba(212, 175, 55, 0.95);
+            color: #000;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .media-btn:hover {
+            background: rgba(212, 175, 55, 1);
+            transform: scale(1.05);
+        }
+
+        .media-btn:active {
+            transform: scale(0.95);
+        }
+
+        .media-btn.active {
+            background: rgba(255, 255, 255, 0.95);
+            color: #000;
+            border: 2px solid #d4af37;
+        }
+
+        .sound-btn {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .sound-btn.on {
+            background: rgba(212, 175, 55, 0.95);
+        }
+
+        /* Navigation Dots */
+        .nav-dots {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
+            z-index: 35;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        .sound-btn, .youtube-btn, .play-btn, .next-btn, .exit-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 15px;
+        .nav-dots.visible {
+            opacity: 1;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
             cursor: pointer;
-            font-family: 'Comic Neue', cursive, sans-serif;
-            font-size: 1em;
-            font-weight: 700;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-decoration: none;
+            transition: all 0.3s ease;
         }
 
-        .sound-btn { background-color: #4CAF50; color: white; }
-        .sound-btn.off { background-color: #f44336; }
-        .youtube-btn { background-color: #FF9800; color: white; }
-        .youtube-btn:hover { background-color: #FFB300; }
-        .play-btn { background-color: #0057B7; color: white; }
-        .play-btn:hover { background-color: #003087; }
-        .next-btn { background-color: #FFD700; color: #0057B7; display: none; }
-        .next-btn:hover { background-color: #FFC300; }
-        .exit-btn { background-color: #ff3333; color: white; display: none; }
-        .exit-btn:hover { background-color: #cc0000; }
+        .dot.active {
+            background: #d4af37;
+            transform: scale(1.2);
+        }
 
-        #word-canvas {
-            position: absolute;
-            top: 10%;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10001;
+        /* Error Screen */
+        .error-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
             display: none;
-            border: 2px solid #0057B7;
-            background: rgba(255, 255, 255, 0.8);
-            max-width: 80%;
-            max-height: 50%;
-            border-radius: 10px;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .error-screen.visible {
+            display: flex;
+        }
+
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .retry-btn {
+            background: #d4af37;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .media-controls {
+                gap: 10px;
+                padding: 0 15px;
+                bottom: 20px;
+            }
+            
+            .media-btn {
+                padding: 10px 16px;
+                font-size: 14px;
+                min-width: 110px;
+            }
+            
+            .nav-dots {
+                bottom: 85px;
+            }
+            
+            .hud {
+                bottom: 80px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="arjs-loader" id="loader">
-        <div class="pulse">🌍 Світ на долоні 🎈</div>
-        <div style="margin-top: 20px; font-size: 1.2em;">Наведи камеру на маркер! 😊🎨</div>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div>Завантаження AR...</div>
     </div>
 
-    <canvas id="word-canvas"></canvas>
+    <!-- Error Screen -->
+    <div class="error-screen" id="errorScreen">
+        <div class="error-icon">⚠️</div>
+        <div id="errorMessage">Сталася помилка</div>
+        <button class="retry-btn" id="retryBtn">Спробувати знову</button>
+    </div>
 
+    <!-- AR Scene -->
     <a-scene
-        mindar-image="imageTargetSrc: ./my-marker.mind;"
+        mindar-image="imageTargetSrc: ./marker.mind; autoStart: true; uiLoading: no; uiError: no; maxTrack: 1;"
+        embedded
+        color-space="sRGB"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
-        loading-screen="enabled: false"
-        embedded
-        renderer="colorManagement: true; physicallyCorrectLights: true;"
-        touch-gestures
-    >
+        id="arScene"
+        style="background: transparent;">
+        
         <a-assets>
-            <audio id="bg-music" src="./bg-music.mp3" preload="auto" loop></audio>
-            <audio id="success-sound" src="./success.mp3" preload="auto"></audio>
-            <img id="earth-texture" src="./earth.jpg">
-            <img id="peace-dove-img" src="./peace-dove.png">
+            <!-- 2 відео -->
+            <video id="video1" src="./video1.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+            <video id="video2" src="./video2.mp4" muted playsinline webkit-playsinline preload="auto"></video>
+            
+            <!-- 5 фото -->
+            <img id="photo1" src="./photo1.jpg" preload="auto">
+            <img id="photo2" src="./photo2.jpg" preload="auto">
+            <img id="photo3" src="./photo3.jpg" preload="auto">
+            <img id="photo4" src="./photo4.jpg" preload="auto">
+            <img id="photo5" src="./photo5.jpg" preload="auto">
         </a-assets>
 
-        <a-camera
-            id="camera"
-            position="0 0 1.5"
-            look-controls="enabled: false"
-        ></a-camera>
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <a-entity mindar-image-target="targetIndex: 0">
-            <a-sphere
-                id="hand-planet"
-                position="0 0 -0.5"
-                radius="0.4"
-                src="#earth-texture"
+            <!-- Всі медіа елементи (спочатку приховані) -->
+            <!-- Відео -->
+            <a-video
+                src="#video1"
+                width="1.7"
+                height="3.0"
+                position="0 0 0"
                 visible="false"
-                material="opacity: 1; transparent: false"
-            >
-                <a-image
-                    id="peace-dove-entity"
-                    src="#peace-dove-img"
-                    position="0 0.5 0.5"
-                    scale="0.3 0.3 0.3"
-                    visible="false"
-                    animation="property: rotation; to: 0 360 0; dur: 4000; easing: linear; loop: true"
-                ></a-image>
-                <a-animation
-                    attribute="rotation"
-                    to="0 360 0"
-                    dur="5000"
-                    repeat="indefinite"
-                ></a-animation>
-            </a-sphere>
+                id="videoEntity1">
+            </a-video>
+            
+            <a-video
+                src="#video2"
+                width="1.7"
+                height="3.0"
+                position="0 0 0"
+                visible="false"
+                id="videoEntity2">
+            </a-video>
+            
+            <!-- Фото -->
+            <a-image
+                src="#photo1"
+                width="1.7"
+                height="3.0"
+                position="0 0 0"
+                visible="false"
+                id="photoEntity1">
+            </a-image>
+            
+            <a-image
+                src="#photo2"
+                width="1.7"
+                height="3.0"
+                position="0 0 0"
+                visible="false"
+                id="photoEntity2">
+            </a-image>
+            
+            <a-image
+                src="#photo3"
+                width="1.7"
+                height="3.0"
+                position="0 0 0"
+                visible="false"
+                id="photoEntity3">
+            </a-image>
+            
+            <a-image
+                src="#photo4"
+                width="1.7"
+                height="3.0"
+                position="0 0 0"
+                visible="false"
+                id="photoEntity4">
+            </a-image>
+            
+            <a-image
+                src="#photo5"
+                width="1.7"
+                height="3.0"
+                position="0 0 0"
+                visible="false"
+                id="photoEntity5">
+            </a-image>
         </a-entity>
     </a-scene>
 
-    <div class="controls">
-        <button id="sound-btn" class="sound-btn">Увімкнути звук</button>
-        <button id="play-btn" class="play-btn">Грати</button>
-        <button id="next-btn" class="next-btn">Наступне</button>
-        <button id="exit-btn" class="exit-btn">Вийти з гри</button>
-        <a href="https://www.youtube.com/playlist?list=PL6UDFwT9TzFw5K8Tzu_OgsDz7vV3N9eY-" target="_blank" class="youtube-btn">YouTube SmartLessa</a>
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- HUD -->
+    <div class="hud" id="hud">
+        <div class="instructions">Лови тільки крила 🪽</div>
+        <div class="score" id="score">Крила: 0/10</div>
     </div>
 
+    <!-- Feedback -->
+    <div class="feedback" id="feedback"></div>
+
+    <!-- Victory Screen -->
+    <div class="victory" id="victory">
+        <div class="victory-message">Аня надає крила! 💋</div>
+        <div>Ти зібрав усі крила!</div>
+        <button class="continue-btn" id="continueBtn">Грати ще раз</button>
+    </div>
+
+    <!-- Navigation Dots -->
+    <div class="nav-dots" id="navDots">
+        <!-- Dots will be generated dynamically -->
+    </div>
+
+    <!-- Media Controls -->
+    <div class="media-controls" id="mediaControls">
+        <button class="media-btn" id="prevBtn">◀ Попереднє</button>
+        <button class="media-btn" id="playPauseBtn">▶ Відтворити</button>
+        <button class="media-btn" id="nextBtn">Наступне ▶</button>
+        <button class="media-btn sound-btn" id="soundBtn">🔇 Увімк. звук</button>
+        <button class="media-btn" id="saveBtn">💾 Зберегти</button>
+        <button class="media-btn" id="shareBtn">📤 Поділитись</button>
+    </div>
+
+    <!-- Marker Hint -->
+    <div id="markerHint">Направте камеру на фото 🪽</div>
+
     <script>
-        function fixHeight() {
-            document.body.style.height = window.innerHeight + 'px';
-        }
-        fixHeight();
-        window.addEventListener('resize', fixHeight);
-
-        function adjustCanvasSize() {
-            const canvas = document.getElementById('word-canvas');
-            canvas.width = window.innerWidth * 0.8;
-            canvas.height = window.innerHeight * 0.5;
-        }
-        window.addEventListener('resize', adjustCanvasSize);
-        adjustCanvasSize();
-
-        const loader = document.querySelector('#loader');
-        const targetEntity = document.querySelector('[mindar-image-target]');
-        const planet = document.querySelector('#hand-planet');
-        const bgMusic = document.querySelector('#bg-music');
-        const soundBtn = document.querySelector('#sound-btn');
-        const playBtn = document.querySelector('#play-btn');
-        const nextBtn = document.querySelector('#next-btn');
-        const exitBtn = document.querySelector('#exit-btn');
-        const peaceDove = document.querySelector('#peace-dove-entity');
-        const successSound = document.querySelector('#success-sound');
-        const canvas = document.querySelector('#word-canvas');
-        const ctx = canvas.getContext('2d');
-        const arScene = document.querySelector('a-scene');
-
-        const earthTexture = document.querySelector('#earth-texture');
-        if (earthTexture) {
-            earthTexture.addEventListener('load', () => { console.log('✅ Текстура earth.jpg успішно завантажена'); });
-            earthTexture.addEventListener('error', () => { console.error('❌ Помилка завантаження текстури earth.jpg'); });
-        }
-        const peaceDoveImg = document.querySelector('#peace-dove-img');
-        if (peaceDoveImg) {
-            peaceDoveImg.addEventListener('load', () => { console.log('✅ Текстура голуба успішно завантажена'); });
-            peaceDoveImg.addEventListener('error', () => { console.error('❌ Помилка завантаження текстури peace-dove.png'); });
-        }
-
-        function getTextWidth(text, font) {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            context.font = font;
-            return context.measureText(text).width + 10;
-        }
-
-        const phrases = [
-            ['Мир', 'Україні', 'Річка', 'Гора'],
-            ['Свобода', 'всім', 'Ліс', 'Море'],
-            ['Єдність', 'і', 'мир', 'Дерево', 'Сонце'],
-            ['Україна', 'моя', 'Батьківщина', 'квітка'], // Виправлені слова для 4-ї фрази
-            ['Добро', 'переможе', 'Зло', 'Сміх']
-        ];
-
-        const correctPhraseOrders = [
-            ['Мир', 'Україні'],
-            ['Свобода', 'всім'],
-            ['Єдність', 'і', 'мир'],
-            ['Україна', 'моя', 'Батьківщина'],
-            ['Добро', 'переможе']
-        ];
-
-        let currentPhraseIndex = 0;
-        let words = [];
-        let selectedWord = null;
-        let isGameActive = false;
-        let currentCompletedPhrase = [];
-
-        targetEntity.addEventListener('targetFound', () => {
-            console.log("🎯 Маркер знайдено! Планета з'явилася.");
-            loader.style.display = 'none';
-            planet.setAttribute('visible', 'true');
-            if (bgMusic.paused) {
-                bgMusic.play().catch(e => console.log("🔇 Помилка відтворення музики:", e));
-                soundBtn.classList.remove('off');
-                soundBtn.textContent = 'Вимкнути звук';
-            }
-            if (!isGameActive) {
-                playBtn.style.display = 'block';
-            }
-        });
-
-        targetEntity.addEventListener('targetLost', () => {
-            console.log("ℹ️ Маркер втрачено.");
-            planet.setAttribute('visible', 'false');
-            bgMusic.pause();
-            canvas.style.display = 'none';
-            playBtn.style.display = 'none';
-            nextBtn.style.display = 'none';
-            exitBtn.style.display = 'none';
-            loader.style.display = 'flex';
-            loader.querySelector('.pulse').textContent = '🌍 Світ на долоні 🎈';
-            loader.querySelector('div[style]').textContent = 'Наведи камеру на маркер! 😊🎨';
-        });
-
-        soundBtn.addEventListener('click', () => {
-            if (bgMusic.paused) {
-                bgMusic.play().catch(e => console.log("🔇 Помилка відтворення музики:", e));
-                soundBtn.classList.remove('off');
-                soundBtn.textContent = 'Вимкнути звук';
-            } else {
-                bgMusic.pause();
-                soundBtn.classList.add('off');
-                soundBtn.textContent = 'Увімкнути звук';
-            }
-        });
-
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        function loadPhrase(index) {
-            const phraseWords = phrases[index];
-            const shuffledWords = shuffle([...phraseWords]);
-            words = shuffledWords.map((text) => {
-                return {
-                    text,
-                    x: 0,
-                    y: 0,
-                    width: getTextWidth(text, 'bold 20px Comic Neue'),
-                    height: 30,
-                    placed: false
+        class ARGame {
+            constructor() {
+                // Конфігурація медіа
+                this.MEDIA_CONFIG = {
+                    videos: [
+                        { id: 'video1', entityId: 'videoEntity1', type: 'video', name: 'Відео 1' },
+                        { id: 'video2', entityId: 'videoEntity2', type: 'video', name: 'Відео 2' }
+                    ],
+                    photos: [
+                        { id: 'photo1', entityId: 'photoEntity1', type: 'photo', name: 'Фото 1' },
+                        { id: 'photo2', entityId: 'photoEntity2', type: 'photo', name: 'Фото 2' },
+                        { id: 'photo3', entityId: 'photoEntity3', type: 'photo', name: 'Фото 3' },
+                        { id: 'photo4', entityId: 'photoEntity4', type: 'photo', name: 'Фото 4' },
+                        { id: 'photo5', entityId: 'photoEntity5', type: 'photo', name: 'Фото 5' }
+                    ]
                 };
-            });
-            currentCompletedPhrase = [];
-            positionWordsRandomly();
-            drawWords();
-        }
 
-        function positionWordsRandomly() {
-            const padding = 20;
-            const horizontalMargin = 20; // Зменшено відступ для кращого використання простору
-            const verticalMargin = 15; // Відстань між рядками
-            let currentX = horizontalMargin;
-            let currentY = 50;
-            const availableWidth = canvas.width - horizontalMargin * 2;
-            
-            // Розподіляємо слова по рядках
-            const lines = [];
-            let line = [];
-            let lineWidth = 0;
-            
-            words.forEach(word => {
-                const wordWidth = word.width;
-                if (lineWidth + wordWidth + padding > availableWidth && line.length > 0) {
-                    lines.push(line);
-                    line = [word];
-                    lineWidth = wordWidth + padding;
-                } else {
-                    line.push(word);
-                    lineWidth += wordWidth + padding;
-                }
-            });
-            if (line.length > 0) {
-                lines.push(line);
-            }
-            
-            // Розраховуємо та встановлюємо координати
-            lines.forEach(line => {
-                const totalLineWidth = line.reduce((sum, word) => sum + word.width + padding, 0) - padding;
-                let startX = (canvas.width - totalLineWidth) / 2;
+                // Об'єднуємо все медіа в один масив
+                this.allMedia = [...this.MEDIA_CONFIG.videos, ...this.MEDIA_CONFIG.photos];
+                this.currentMediaIndex = 0;
+                this.currentMediaType = 'video'; // 'video' або 'photo'
                 
-                line.forEach(word => {
-                    word.x = startX;
-                    word.y = currentY;
-                    startX += word.width + padding;
+                this.initializeElements();
+                this.setupGameState();
+                this.bindEvents();
+                this.adjustControlsForSafeArea();
+                this.createNavigationDots();
+            }
+
+            initializeElements() {
+                this.scene = document.getElementById('arScene');
+                this.gameCanvas = document.getElementById('gameCanvas');
+                this.ctx = this.gameCanvas.getContext('2d');
+                
+                this.loadingScreen = document.getElementById('loadingScreen');
+                this.errorScreen = document.getElementById('errorScreen');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.retryBtn = document.getElementById('retryBtn');
+                this.hud = document.getElementById('hud');
+                this.scoreEl = document.getElementById('score');
+                this.feedbackEl = document.getElementById('feedback');
+                this.victoryEl = document.getElementById('victory');
+                this.continueBtn = document.getElementById('continueBtn');
+                this.markerHint = document.getElementById('markerHint');
+                this.mediaControls = document.getElementById('mediaControls');
+                this.navDots = document.getElementById('navDots');
+                
+                // Кнопки керування
+                this.prevBtn = document.getElementById('prevBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.playPauseBtn = document.getElementById('playPauseBtn');
+                this.soundBtn = document.getElementById('soundBtn');
+                this.saveBtn = document.getElementById('saveBtn');
+                this.shareBtn = document.getElementById('shareBtn');
+
+                this.validateElements();
+                this.resizeCanvas();
+                
+                // Отримуємо посилання на всі відео елементи
+                this.videoElements = {
+                    video1: document.getElementById('video1'),
+                    video2: document.getElementById('video2')
+                };
+            }
+
+            validateElements() {
+                const required = [
+                    this.scene, this.gameCanvas, this.ctx,
+                    this.loadingScreen, this.hud, this.scoreEl, this.feedbackEl,
+                    this.victoryEl, this.markerHint, this.mediaControls
+                ];
+                required.forEach(el => {
+                    if (!el) throw new Error('DOM element missing');
                 });
-                currentY += line[0].height + verticalMargin;
-            });
-        }
-
-        function drawWords() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = 'bold 20px Comic Neue';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-
-            ctx.fillStyle = '#FF4500';
-            ctx.font = 'bold 22px Comic Neue';
-            ctx.textAlign = 'center';
-            ctx.fillText('🎯 Склади фразу!', canvas.width / 2, 30);
-
-            const containerWidth = canvas.width - 60;
-            const containerHeight = 50;
-            const containerX = (canvas.width - containerWidth) / 2;
-            const containerY = canvas.height - 80;
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(containerX, containerY, containerWidth, containerHeight);
-
-            let placedX = containerX + 10;
-            currentCompletedPhrase.forEach(wordText => {
-                const wordWidth = getTextWidth(wordText, 'bold 20px Comic Neue');
-                ctx.fillStyle = '#0057B7';
-                ctx.fillText(wordText, placedX, containerY + 10);
-                placedX += wordWidth + 10;
-            });
-
-            words.forEach(word => {
-                if (!word.placed) {
-                    ctx.fillStyle = '#FF4500';
-                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                    ctx.shadowBlur = 3;
-                    ctx.shadowOffsetX = 1;
-                    ctx.shadowOffsetY = 1;
-                    ctx.fillText(word.text, word.x, word.y);
-                    ctx.shadowColor = 'transparent';
-                }
-            });
-        }
-
-        function startWordGame() {
-            isGameActive = true;
-            canvas.style.display = 'block';
-            playBtn.style.display = 'none';
-            nextBtn.style.display = 'none';
-            exitBtn.style.display = 'block';
-            peaceDove.setAttribute('visible', 'false');
-            currentPhraseIndex = 0;
-            loadPhrase(currentPhraseIndex);
-
-            canvas.addEventListener('mousedown', handleMouseDown);
-            canvas.addEventListener('mousemove', handleMouseMove);
-            canvas.addEventListener('mouseup', handleMouseUp);
-            canvas.addEventListener('touchstart', handleTouchStart);
-            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-            canvas.addEventListener('touchend', handleMouseUp);
-        }
-
-        function exitGame() {
-            isGameActive = false;
-            canvas.style.display = 'none';
-            playBtn.style.display = 'block';
-            nextBtn.style.display = 'none';
-            exitBtn.style.display = 'none';
-            peaceDove.setAttribute('visible', 'true');
-        }
-
-        function getCanvasCoords(e, isTouch = false) {
-            const rect = canvas.getBoundingClientRect();
-            const x = isTouch ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-            const y = isTouch ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-            return { x, y };
-        }
-
-        function handleMouseDown(e) {
-            e.preventDefault();
-            const { x, y } = getCanvasCoords(e);
-            selectedWord = words.find(word =>
-                !word.placed && x > word.x && x < word.x + word.width && y > word.y && y < word.y + word.height
-            );
-        }
-
-        function handleTouchStart(e) {
-            e.preventDefault();
-            const { x, y } = getCanvasCoords(e, true);
-            selectedWord = words.find(word =>
-                !word.placed && x > word.x && x < word.x + word.width && y > word.y && y < word.y + word.height
-            );
-        }
-
-        function handleMouseMove(e) {
-            if (selectedWord) {
-                const { x, y } = getCanvasCoords(e, e.touches);
-                selectedWord.x = x - selectedWord.width / 2;
-                selectedWord.y = y - selectedWord.height / 2;
-                drawWords();
             }
-        }
 
-        function handleTouchMove(e) {
-            e.preventDefault();
-            if (selectedWord) {
-                const { x, y } = getCanvasCoords(e, true);
-                selectedWord.x = x - selectedWord.width / 2;
-                selectedWord.y = y - selectedWord.height / 2;
-                drawWords();
+            createNavigationDots() {
+                this.navDots.innerHTML = '';
+                this.allMedia.forEach((media, index) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'dot';
+                    dot.dataset.index = index;
+                    dot.addEventListener('click', () => this.switchToMedia(index));
+                    this.navDots.appendChild(dot);
+                });
+                this.updateNavigationDots();
             }
-        }
 
-        function handleMouseUp() {
-            if (selectedWord) {
-                const containerY = canvas.height - 80;
-                const containerHeight = 50;
-
-                if (selectedWord.y > containerY && selectedWord.y < containerY + containerHeight) {
-                    const nextWord = correctPhraseOrders[currentPhraseIndex][currentCompletedPhrase.length];
-                    if (selectedWord.text === nextWord) {
-                        currentCompletedPhrase.push(selectedWord.text);
-                        words = words.filter(w => w !== selectedWord);
-                        selectedWord = null;
-                        checkWinCondition();
+            updateNavigationDots() {
+                const dots = this.navDots.querySelectorAll('.dot');
+                dots.forEach((dot, index) => {
+                    if (index === this.currentMediaIndex) {
+                        dot.classList.add('active');
                     } else {
-                        selectedWord = null;
-                        positionWordsRandomly();
+                        dot.classList.remove('active');
+                    }
+                });
+            }
+
+            setupGameState() {
+                this.gameState = {
+                    isMarkerFound: false,
+                    score: 0,
+                    TARGET_SCORE: 10,
+                    fallingItems: [],
+                    gameActive: false,
+                    animationId: null,
+                    soundEnabled: false,
+                    lastSpawnTime: 0,
+                    SPAWN_INTERVAL: 300,
+                    WING_PROBABILITY: 0.6,
+                    isPlaying: false
+                };
+            }
+
+            bindEvents() {
+                window.addEventListener('resize', () => this.throttledResize());
+                window.addEventListener('error', (e) => this.handleGlobalError(e));
+
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', () => {
+                        this.adjustControlsForSafeArea();
+                    });
+                }
+
+                this.gameCanvas.addEventListener('pointerdown', (e) => this.handleTap(e));
+                this.gameCanvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+
+                // Кнопки керування медіа
+                this.prevBtn.addEventListener('click', () => this.previousMedia());
+                this.nextBtn.addEventListener('click', () => this.nextMedia());
+                this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+                this.soundBtn.addEventListener('click', () => this.toggleSound());
+                this.saveBtn.addEventListener('click', () => this.saveCurrentMedia());
+                this.shareBtn.addEventListener('click', () => this.shareCurrentMedia());
+                
+                this.continueBtn.addEventListener('click', () => this.restartGame());
+                this.retryBtn.addEventListener('click', () => this.retryAR());
+
+                // Слухачі для всіх відео
+                Object.values(this.videoElements).forEach(video => {
+                    video.addEventListener('loadeddata', () => console.log('Video loaded:', video.id));
+                    video.addEventListener('error', (e) => this.handleVideoError(e));
+                    video.addEventListener('ended', () => this.handleVideoEnd(video));
+                });
+
+                this.scene.addEventListener('renderstart', () => this.handleARLoad());
+                this.scene.addEventListener('targetFound', () => this.handleTargetFound());
+                this.scene.addEventListener('targetLost', () => this.handleTargetLost());
+                this.scene.addEventListener('arError', (e) => this.handleARError(e));
+            }
+
+            adjustControlsForSafeArea() {
+                if (window.visualViewport) {
+                    const viewportHeight = window.visualViewport.height;
+                    const layoutHeight = window.innerHeight;
+                    const navBarHeight = Math.max(0, layoutHeight - viewportHeight);
+                    
+                    // Корекція для кнопок внизу
+                    this.mediaControls.style.bottom = `${30 + navBarHeight}px`;
+                    this.navDots.style.bottom = `${100 + navBarHeight}px`;
+                    this.hud.style.bottom = `${80 + navBarHeight}px`;
+                }
+            }
+
+            resizeCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                this.gameCanvas.width = window.innerWidth * dpr;
+                this.gameCanvas.height = window.innerHeight * dpr;
+                this.gameCanvas.style.width = `${window.innerWidth}px`;
+                this.gameCanvas.style.height = `${window.innerHeight}px`;
+                this.ctx.scale(dpr, dpr);
+            }
+
+            throttledResize() {
+                clearTimeout(this.resizeTimeout);
+                this.resizeTimeout = setTimeout(() => this.resizeCanvas(), 100);
+            }
+
+            // Показуємо конкретне медіа
+            showMedia(index) {
+                const media = this.allMedia[index];
+                if (!media) return;
+                
+                // Приховуємо всі медіа
+                this.allMedia.forEach(m => {
+                    const entity = document.getElementById(m.entityId);
+                    if (entity) entity.setAttribute('visible', false);
+                });
+                
+                // Паузимо всі відео
+                Object.values(this.videoElements).forEach(video => {
+                    if (!video.paused) video.pause();
+                });
+                
+                // Показуємо поточне медіа
+                const currentEntity = document.getElementById(media.entityId);
+                if (currentEntity) {
+                    currentEntity.setAttribute('visible', true);
+                    
+                    if (media.type === 'video') {
+                        const videoEl = this.videoElements[media.id];
+                        if (videoEl) {
+                            this.currentMediaType = 'video';
+                            this.gameState.isPlaying = true;
+                            videoEl.play().catch(e => console.warn('Video play failed'));
+                            this.playPauseBtn.innerHTML = '⏸ Пауза';
+                        }
+                    } else {
+                        this.currentMediaType = 'photo';
+                        this.gameState.isPlaying = false;
+                        this.playPauseBtn.innerHTML = '▶ Відтворити';
+                    }
+                }
+                
+                this.currentMediaIndex = index;
+                this.updateNavigationDots();
+                this.updateMediaControls();
+            }
+
+            getCurrentMedia() {
+                return this.allMedia[this.currentMediaIndex];
+            }
+
+            updateMediaControls() {
+                const media = this.getCurrentMedia();
+                if (media.type === 'video') {
+                    this.playPauseBtn.style.display = 'flex';
+                    this.soundBtn.style.display = 'flex';
+                } else {
+                    this.playPauseBtn.style.display = 'none';
+                    this.soundBtn.style.display = 'none';
+                }
+                
+                // Оновлюємо текст кнопки збереження
+                this.saveBtn.innerHTML = media.type === 'video' ? '💾 Зберегти відео' : '💾 Зберегти фото';
+            }
+
+            switchToMedia(index) {
+                if (index < 0 || index >= this.allMedia.length) return;
+                this.showMedia(index);
+            }
+
+            nextMedia() {
+                let nextIndex = this.currentMediaIndex + 1;
+                if (nextIndex >= this.allMedia.length) nextIndex = 0;
+                this.showMedia(nextIndex);
+                this.showFeedback('Наступне ➡️', true);
+            }
+
+            previousMedia() {
+                let prevIndex = this.currentMediaIndex - 1;
+                if (prevIndex < 0) prevIndex = this.allMedia.length - 1;
+                this.showMedia(prevIndex);
+                this.showFeedback('Попереднє ⬅️', true);
+            }
+
+            togglePlayPause() {
+                const media = this.getCurrentMedia();
+                if (media.type !== 'video') return;
+                
+                const videoEl = this.videoElements[media.id];
+                if (!videoEl) return;
+                
+                if (this.gameState.isPlaying) {
+                    videoEl.pause();
+                    this.playPauseBtn.innerHTML = '▶ Відтворити';
+                    this.showFeedback('Пауза ⏸', false);
+                } else {
+                    videoEl.play();
+                    this.playPauseBtn.innerHTML = '⏸ Пауза';
+                    this.showFeedback('Відтворення ▶️', true);
+                }
+                
+                this.gameState.isPlaying = !this.gameState.isPlaying;
+            }
+
+            async toggleSound() {
+                this.gameState.soundEnabled = !this.gameState.soundEnabled;
+                
+                // Встановлюємо звук для всіх відео
+                Object.values(this.videoElements).forEach(video => {
+                    video.muted = !this.gameState.soundEnabled;
+                });
+                
+                if (this.gameState.soundEnabled) {
+                    this.soundBtn.innerHTML = '🔊 Вимк. звук';
+                    this.soundBtn.classList.add('on');
+                    this.showFeedback('Звук увімкнено 🔊', true);
+                    
+                    // Спробуємо відтворити поточне відео зі звуком
+                    const media = this.getCurrentMedia();
+                    if (media.type === 'video') {
+                        const videoEl = this.videoElements[media.id];
+                        if (videoEl) {
+                            try { await videoEl.play(); } catch (e) { console.warn('Audio play failed'); }
+                        }
                     }
                 } else {
-                    selectedWord = null;
-                    positionWordsRandomly();
+                    this.soundBtn.innerHTML = '🔇 Увімк. звук';
+                    this.soundBtn.classList.remove('on');
+                    this.showFeedback('Звук вимкнено 🔇', false);
                 }
-                drawWords();
             }
-        }
 
-        function checkWinCondition() {
-            const targetPhrase = correctPhraseOrders[currentPhraseIndex];
-            if (currentCompletedPhrase.join(' ') === targetPhrase.join(' ')) {
-                isGameActive = false;
-                if (successSound) successSound.play();
-                peaceDove.setAttribute('visible', 'true');
+            spawnItem() {
+                if (!this.gameState.gameActive) return;
+                const now = performance.now();
+                if (now - this.gameState.lastSpawnTime < this.gameState.SPAWN_INTERVAL) return;
 
-                setTimeout(() => {
-                    canvas.style.display = 'none';
-                    if (currentPhraseIndex < phrases.length - 1) {
-                        nextBtn.style.display = 'block';
-                        exitBtn.style.display = 'block';
+                const isWing = Math.random() < this.gameState.WING_PROBABILITY;
+                const emoji = isWing ? '🪽' : ['🎂', '🍷', '🎁', '🌹', '😂'][Math.floor(Math.random() * 5)];
+
+                this.gameState.fallingItems.push({
+                    x: Math.random() * (window.innerWidth - 60) + 30,
+                    y: -60,
+                    size: 32 + Math.random() * 20,
+                    speed: 2 + Math.random() * 3,
+                    emoji,
+                    isWing,
+                    id: now + Math.random()
+                });
+
+                this.gameState.lastSpawnTime = now;
+            }
+
+            update() {
+                if (!this.gameState.gameActive) return;
+
+                this.ctx.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+
+                for (let i = this.gameState.fallingItems.length - 1; i >= 0; i--) {
+                    const item = this.gameState.fallingItems[i];
+                    item.y += item.speed;
+                    this.ctx.font = `bold ${item.size}px sans-serif`;
+                    this.ctx.fillText(item.emoji, item.x, item.y);
+
+                    if (item.y > window.innerHeight + 100) {
+                        this.gameState.fallingItems.splice(i, 1);
+                    }
+                }
+
+                this.spawnItem();
+                this.gameState.animationId = requestAnimationFrame(() => this.update());
+            }
+
+            handleTap(event) {
+                if (!this.gameState.gameActive) return;
+                const rect = this.gameCanvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                let hit = false;
+                for (let i = this.gameState.fallingItems.length - 1; i >= 0; i--) {
+                    const item = this.gameState.fallingItems[i];
+                    const dx = x - item.x;
+                    const dy = y - item.y;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    if (distance < item.size * 0.6) {
+                        hit = true;
+                        const isWing = item.isWing;
+                        this.gameState.fallingItems.splice(i, 1);
+                        if (isWing) {
+                            this.gameState.score++;
+                            this.updateScore();
+                            this.showFeedback('+1 крило! 🪽', true);
+                            if (this.gameState.score >= this.gameState.TARGET_SCORE) {
+                                this.endGame(true);
+                            }
+                        } else {
+                            this.showFeedback('Ой, ще без крил 😅', false);
+                        }
+                        break;
+                    }
+                }
+                if (!hit) this.showFeedback('Мімо! 👆', false);
+            }
+
+            startGame() {
+                if (this.gameState.gameActive) return;
+                this.gameState.gameActive = true;
+                this.gameState.score = 0;
+                this.gameState.fallingItems = [];
+                this.updateScore();
+                this.showHUD(true);
+                this.showMediaControls(true);
+                this.hideVictory();
+                this.update();
+            }
+
+            endGame(isWin) {
+                this.gameState.gameActive = false;
+                if (this.gameState.animationId) {
+                    cancelAnimationFrame(this.gameState.animationId);
+                    this.gameState.animationId = null;
+                }
+                if (isWin) this.showVictory();
+            }
+
+            restartGame() {
+                this.hideVictory();
+                this.startGame();
+            }
+
+            updateScore() {
+                this.scoreEl.textContent = `Крила: ${this.gameState.score}/${this.gameState.TARGET_SCORE}`;
+            }
+
+            async saveCurrentMedia() {
+                try {
+                    const media = this.getCurrentMedia();
+                    const fileName = media.type === 'video' ? 'anya-video.mp4' : 'anya-photo.jpg';
+                    const fileUrl = media.type === 'video' ? './' + media.id + '.mp4' : './' + media.id + '.jpg';
+                    
+                    const link = document.createElement('a');
+                    link.href = fileUrl;
+                    link.download = fileName;
+                    link.click();
+                    
+                    this.showFeedback(`${media.type === 'video' ? 'Відео' : 'Фото'} збережено! 💾`, true);
+                } catch (error) {
+                    console.error('Помилка збереження:', error);
+                    this.showFeedback('Помилка збереження 😔', false);
+                }
+            }
+
+            async shareCurrentMedia() {
+                try {
+                    const media = this.getCurrentMedia();
+                    
+                    if (navigator.share) {
+                        await navigator.share({
+                            title: `${media.type === 'video' ? 'Відео' : 'Фото'} з Анею`,
+                            text: `Подивись на це ${media.type === 'video' ? 'відео' : 'фото'}!`,
+                            url: window.location.href,
+                        });
+                        this.showFeedback('Поділились успішно! 📤', true);
                     } else {
-                        console.log('🎉 Гра завершена! Вітаємо!');
-                        nextBtn.style.display = 'none';
-                        exitBtn.style.display = 'none';
-                        playBtn.style.display = 'block';
+                        // Fallback для браузерів без Web Share API
+                        navigator.clipboard.writeText(window.location.href);
+                        this.showFeedback('Посилання скопійовано! 📋', true);
                     }
-                }, 3000);
+                } catch (error) {
+                    console.error('Помилка поділу:', error);
+                    this.showFeedback('Не вдалося поділитись 😔', false);
+                }
+            }
+
+            handleVideoEnd(video) {
+                // Автоматично перемикаємо на наступне відео
+                if (this.getCurrentMedia().type === 'video') {
+                    setTimeout(() => this.nextMedia(), 500);
+                }
+            }
+
+            showFeedback(text, isGood = true) {
+                this.feedbackEl.textContent = text;
+                this.feedbackEl.style.color = isGood ? '#d4af37' : '#ff6b6b';
+                this.feedbackEl.classList.add('visible');
+                setTimeout(() => this.feedbackEl.classList.remove('visible'), 1500);
+            }
+
+            showHUD(show) { 
+                show ? this.hud.classList.add('visible') : this.hud.classList.remove('visible'); 
+            }
+            
+            showMediaControls(show) { 
+                show ? this.mediaControls.classList.add('visible') : this.mediaControls.classList.remove('visible'); 
+                show ? this.navDots.classList.add('visible') : this.navDots.classList.remove('visible'); 
+            }
+            
+            hideMediaControls() { 
+                this.mediaControls.classList.remove('visible'); 
+                this.navDots.classList.remove('visible'); 
+            }
+            
+            showVictory() { 
+                this.victoryEl.classList.add('visible'); 
+            }
+            
+            hideVictory() { 
+                this.victoryEl.classList.remove('visible'); 
+            }
+            
+            hideMarkerHint() { 
+                this.markerHint.classList.add('hidden'); 
+            }
+            
+            showMarkerHint() { 
+                this.markerHint.classList.remove('hidden'); 
+            }
+            
+            hideLoading() { 
+                this.loadingScreen.style.display = 'none'; 
+            }
+            
+            showError(msg) { 
+                this.errorMessage.textContent = msg; 
+                this.errorScreen.classList.add('visible'); 
+                this.hideLoading(); 
+            }
+            
+            hideError() { 
+                this.errorScreen.classList.remove('visible'); 
+            }
+
+            handleARLoad() {
+                this.hideLoading();
+                this.scene.classList.add('ready');
+            }
+
+            handleTargetFound() {
+                this.gameState.isMarkerFound = true;
+                this.hideMarkerHint();
+                
+                // Показуємо перше медіа
+                this.showMedia(0);
+                this.startGame();
+            }
+
+            handleTargetLost() {
+                this.gameState.isMarkerFound = false;
+                
+                // Приховуємо всі медіа
+                this.allMedia.forEach(m => {
+                    const entity = document.getElementById(m.entityId);
+                    if (entity) entity.setAttribute('visible', false);
+                });
+                
+                // Паузимо всі відео
+                Object.values(this.videoElements).forEach(video => {
+                    if (!video.paused) video.pause();
+                });
+                
+                this.gameState.gameActive = false;
+                this.gameState.isPlaying = false;
+                
+                if (this.gameState.animationId) {
+                    cancelAnimationFrame(this.gameState.animationId);
+                    this.gameState.animationId = null;
+                }
+                
+                this.showHUD(false);
+                this.hideMediaControls();
+                this.hideVictory();
+                this.gameState.fallingItems = [];
+                this.showMarkerHint();
+            }
+
+            handleGlobalError(e) { 
+                this.showError('Неочікувана помилка'); 
+            }
+            
+            handleVideoError(e) { 
+                console.error('Video error:', e);
+                this.showFeedback('Помилка відео', false); 
+            }
+            
+            handleARError(e) { 
+                this.showError('Помилка AR: ' + (e.detail || '')); 
+            }
+
+            retryAR() {
+                this.hideError();
+                this.loadingScreen.style.display = 'flex';
+                setTimeout(() => window.location.reload(), 500);
             }
         }
 
-        playBtn.addEventListener('click', () => {
-            currentPhraseIndex = 0;
-            startWordGame();
-        });
-
-        nextBtn.addEventListener('click', () => {
-            currentPhraseIndex++;
-            loadPhrase(currentPhraseIndex);
-            nextBtn.style.display = 'none';
-            isGameActive = true;
-            canvas.style.display = 'block';
-            peaceDove.setAttribute('visible', 'false');
-        });
-
-        exitBtn.addEventListener('click', exitGame);
-
-        AFRAME.registerComponent('touch-gestures', {
-            schema: {
-                minScale: { type: 'number', default: 0.2 },
-                maxScale: { type: 'number', default: 3.0 },
-                rotationSpeed: { type: 'number', default: 2.0 }
-            },
-            init: function () {
-                this.isRotating = false;
-                this.isPinching = false;
-                this.startPos = { x: 0, y: 0 };
-                this.currentScale = 1;
-                this.planet = document.querySelector('#hand-planet');
-                this.el.addEventListener('touchstart', (e) => {
-                    if (isGameActive) return;
-                    e.preventDefault();
-                    if (e.touches.length === 1) {
-                        this.isRotating = true;
-                        this.startPos.x = e.touches[0].pageX;
-                    } else if (e.touches.length === 2) {
-                        this.isPinching = true;
-                        this.isRotating = false;
-                        this.initialDistance = Math.hypot(
-                            e.touches[0].pageX - e.touches[1].pageX,
-                            e.touches[0].pageY - e.touches[1].pageY
-                        );
-                        this.currentScale = this.planet.object3D.scale.x;
-                    }
-                });
-
-                this.el.addEventListener('touchmove', (e) => {
-                    if (isGameActive) return;
-                    e.preventDefault();
-                    if (this.isPinching && e.touches.length === 2) {
-                        const currentDistance = Math.hypot(
-                            e.touches[0].pageX - e.touches[1].pageX,
-                            e.touches[0].pageY - e.touches[1].pageY
-                        );
-                        const scaleFactor = currentDistance / this.initialDistance;
-                        const newScale = Math.max(this.data.minScale, Math.min(this.data.maxScale, this.currentScale * scaleFactor));
-                        this.planet.object3D.scale.set(newScale, newScale, newScale);
-                    } else if (this.isRotating && e.touches.length === 1) {
-                        const deltaX = (e.touches[0].pageX - this.startPos.x) * this.data.rotationSpeed;
-                        this.planet.object3D.rotation.y += THREE.MathUtils.degToRad(deltaX);
-                        this.startPos.x = e.touches[0].pageX;
-                    }
-                });
-
-                this.el.addEventListener('touchend', () => {
-                    this.isRotating = false;
-                    this.isPinching = false;
-                });
-            }
-        });
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => new ARGame());
+        } else {
+            new ARGame();
+        }
     </script>
 </body>
 </html>
